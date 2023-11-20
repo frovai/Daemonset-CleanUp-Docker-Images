@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: docker-cleanup
+  name: docker-cleanup
+  namespace: docker-cleanup
+spec:
+  selector:
+    matchLabels:
+      app: docker-cleanup
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: docker-cleanup
+    spec:
+      serviceAccountName: docker-cleanup
+      volumes:
+      - name: dockersock
+        hostPath:
+          path: /run/containerd/containerd.sock
+          type: ""
+      containers:
+      - name: docker-cleanup
+        image: MYAWSACCOUNTID.dkr.ecr.us-east-1.amazonaws.com/docker-cleanup:1.0
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+          limits:
+            cpu: 50m
+            memory: 100Mi
+        securityContext:
+          privileged: true
+          runAsUser: 0      
+        volumeMounts:            
+        - name: dockersock
+          mountPath: /run/containerd/containerd.sock
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - operator: "Exists"
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
